@@ -1,17 +1,6 @@
 import sys
-
-
-def load_data(messages_filepath, categories_filepath):
-    pass
-
-
-def clean_data(df):
-    pass
-
-
-def save_data(df, database_filename):
-    pass  
-
+import pandas as pd
+import sqlite3
 
 def main():
     if len(sys.argv) == 4:
@@ -37,6 +26,28 @@ def main():
               'to as the third argument. \n\nExample: python process_data.py '\
               'disaster_messages.csv disaster_categories.csv '\
               'DisasterResponse.db')
+
+
+def load_data(messages_filepath, categories_filepath):
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
+    df = pd.merge(messages, categories, left_on='id', right_on='id', how='inner')
+    return df
+
+
+def clean_data(df):
+    catdf = df.categories.str.split(';',expand=True)
+    orig_cols = set(df)
+    for col in list(list(catdf)):
+        df[catdf[col].values[0].split('-')[0]] = catdf[col].str.split('-').str[1] 
+    del catdf; del df['categories']    
+    df = df.drop_duplicates()
+    return df
+
+
+def save_data(df, database_filename):
+    conn = sqlite3.connect(database_filename)
+    df.to_sql('message_categories', conn, index=False, if_exists='replace')  
 
 
 if __name__ == '__main__':
